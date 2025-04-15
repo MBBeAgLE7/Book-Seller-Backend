@@ -1,6 +1,8 @@
 from fastapi import Request, FastAPI, File, UploadFile, HTTPException, Form, Depends  # type: ignore
 from fastapi.responses import JSONResponse  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+from fastapi.staticfiles import StaticFiles # type: ignore
+from starlette.responses import FileResponse # type: ignore
 from typing import List  # type: ignore
 import cloudinary  # type: ignore
 import cloudinary.uploader  # type: ignore
@@ -33,6 +35,11 @@ cloudinary.config(
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
+
+origins = [
+    "https://book-seller-frontend.vercel.app",  # your Vercel frontend
+    "http://localhost:3000",                    # optional, for local testing
+]
 
 # FastAPI app
 app = FastAPI()
@@ -288,7 +295,7 @@ async def upload_book_for_sale(
 
     books_collection.insert_one(book_data)
 
-    return {"message": "Book successfully uploaded for sale."}
+    return {"message": "Book successfully uploaded for sale"}
 
 @app.post("/predict")
 async def predict(images: List[UploadFile] = File(...)):
