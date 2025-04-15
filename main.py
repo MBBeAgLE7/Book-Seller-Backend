@@ -44,11 +44,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = load_model()
+# Load model once at the start of the application to avoid reloading it for each request
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Initialize EasyOCR reader (English)
-reader = easyocr.Reader(['en'], gpu=False)
 
 def extract_price_from_text(text):
     matches = re.findall(r'₹?\s?(\d{2,5})', text)
@@ -58,6 +58,7 @@ def extract_price_from_text(text):
 
 @app.post("/extract-price")
 async def extract_price(price_image: UploadFile = File(...)):
+    reader = easyocr.Reader(['en'], gpu=False)
     try:
         # Save uploaded image temporarily
         image_path = f"temp_{price_image.filename}"
@@ -80,7 +81,7 @@ async def extract_price(price_image: UploadFile = File(...)):
     except Exception as e:
         print("Error:", e)
         return {"extracted_price": None}
-
+    
 
 # Email validation regex (checks for @gmail.com)
 def validate_email(email: str):
@@ -158,7 +159,6 @@ async def upload_profile_image(image: UploadFile = File(...)):
 @app.get("/cart")
 async def get_cart(email: str):
     cart_items = list(db["cart"].find({"email": email}))
-    
 
     # Convert ObjectId to string
     for item in cart_items:
@@ -219,11 +219,13 @@ def delete_book(reference_id: str):
 
 @app.post("/store-book-details")
 async def store_book_details(
+    
     email: str = Form(...),
     publication_year: int = Form(...),
     cost_price: float = Form(...),
     book_images: List[UploadFile] = File(...),
 ):
+    model = load_model()
     print(f"Received email: {email}")
     print(f"Received publication_year: {publication_year}")
     print(f"Received cost_price: {cost_price}")
@@ -291,6 +293,7 @@ async def upload_book_for_sale(
 @app.post("/predict")
 async def predict(images: List[UploadFile] = File(...)):
     urls = []
+    model = load_model()
     for img in images:
         result = cloudinary.uploader.upload(img.file, folder="book_images")
         urls.append(result["secure_url"])
